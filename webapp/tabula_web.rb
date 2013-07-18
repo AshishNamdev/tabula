@@ -154,11 +154,10 @@ Cuba.define do
       file = File.join(file_path, 'document.pdf')
 
       # fire off background jobs; in different orders if we're doing autodetection
-
       document_metadata_job = GenerateDocumentMetadataJob.create(:filename => original_filename,
                                                                  :id => file_id)
+
       if req.params['autodetect-tables']
-        STDERR.puts req.params['autodetect-tables']
         detect_tables_job = DetectTablesJob.create(:filename => file,
                                                    :output_dir => file_path)
       else

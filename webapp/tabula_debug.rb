@@ -89,33 +89,38 @@ class TabulaDebug < Cuba
     on ":file_id/rulings" do |file_id|
       pdf_path = File.join(TabulaSettings::DOCUMENTS_BASEPATH, file_id)
 
-      page = req.params['page'].to_i - 1
+      coords = JSON.load(req.params['coords'])
+      page = coords.first['page'].to_i - 1
 
-      rulings = Tabula::LSD.detect_lines_in_pdf_page(File.join(pdf_path, 'document.pdf'),
-                                                     page,
-                                                     :image_size => 1024)
+      rulings \
+      = Tabula::Extraction::LineExtractor.lines_in_pdf_page(File.join(pdf_path, 'document.pdf'),
+                                                            page,
+                                                            :render_pdf => false)
 
-      rulings = Tabula::Ruling.clean_rulings(rulings)
+#      rulings = Tabula::Ruling.clean_rulings(rulings)
 
       res['Content-Type'] = 'application/json'
       res.write(rulings.to_json)
 
     end
 
-    on 'pdf/:file_id/graph' do |file_id|
+    on ':file_id/graph' do |file_id|
+      pdf_path = File.join(TabulaSettings::DOCUMENTS_BASEPATH, file_id)
+      coords = JSON.load(req.params['coords'])
+      page = coords.first['page'].to_i
 
       pdf_path = File.join(TabulaSettings::DOCUMENTS_BASEPATH, file_id, 'document.pdf')
       extractor = Tabula::Extraction::CharacterExtractor.new(pdf_path, [page])
 
-      text_elements = extractor.extract.next.get_text([req.params['y1'].to_f,
-                                                       req.params['x1'].to_f,
-                                                       req.params['y2'].to_f,
-                                                       req.params['x2'].to_f])
-
-      text_elements = Tabula::Graph.merge_text_elements(text_elements)
-
+      text_elements = extractor.extract.next.get_text([coords.first['y1'].to_f,
+                                                       coords.first['x1'].to_f,
+                                                       coords.first['y2'].to_f,
+                                                       coords.first['x2'].to_f])
+      text_elements = Tabula::TextElement.merge_text_elements(text_elements)
+      g = Tabula::Graph::Graph.make_graph(text_elements)
+      puts g.inspect
       res['Content-Type'] = 'application/json'
-      res.write Tabula::Graph::Graph.make_graph(text_elements).to_json
+      res.write g.to_json
 
     end
   end
