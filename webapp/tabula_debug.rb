@@ -116,12 +116,11 @@ class TabulaDebug < Cuba
                                                        coords.first['x1'].to_f,
                                                        coords.first['y2'].to_f,
                                                        coords.first['x2'].to_f])
+
       text_elements = Tabula::TextElement.merge_text_elements(text_elements)
       g = Tabula::Graph::Graph.make_graph(text_elements)
-      puts g.inspect
       res['Content-Type'] = 'application/json'
       res.write g.to_json
-
     end
   end
 end
